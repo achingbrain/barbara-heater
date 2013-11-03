@@ -1,0 +1,22 @@
+{
+	"registry": {
+		"name": "brewbot",
+		"service": "brewbot-registry-rest",
+		"version": "1.0.0"
+	},
+	"rest": {
+		"name": "brewbot-heater-rest",
+		"version": "1.0.0",
+		"resources": "./resources"
+	},
+	"brew": {
+		"id": "58bd080d810ee941397ffb74a600007a"
+	},
+	"api": {
+		"name": "brewbot-api-rest",
+		"version": "1.0.0"
+	},
+	"arduino": {
+		"port": "/dev/cu.usbserial-A6027PCJ"
+	}
+}
