@@ -6,32 +6,22 @@ var five = require("johnny-five"),
 	restify = require("restify"),
 	Columbo = require("columbo"),
 	Hapi = require("hapi"),
-	HeaterNotifier = require("./lib/HeaterNotifier"),
-	HeaterController = require("./lib/HeaterController"),
-	TemperatureWatcher = require("./lib/TemperatureWatcher");
+	path = require("path");
 
 // set up arguments
-config.argv().env().file("config.json");
+config.argv().env().file(path.resolve(__dirname, "config.json"));
 
 var container = new Container();
 container.register("config", config);
 
 // our components
-container.createAndRegister("heaterNotifier", HeaterNotifier);
-container.createAndRegister("heaterController", HeaterController);
-container.createAndRegister("temperatureWatcher", TemperatureWatcher);
-
-// set up events for relay controller to turn the heater on and off
-container.find("temperatureWatcher").on("onTooHot", container.find("heaterController").tooHot.bind(container.find("heaterController")));
-container.find("temperatureWatcher").on("onTooCold", container.find("heaterController").tooCold.bind(container.find("heaterController")));
-
-// set up events for notifier to record heater activity
-container.find("heaterController").on("heaterOn", container.find("heaterNotifier").heaterOn.bind(container.find("heaterNotifier")));
-container.find("heaterController").on("heaterOff", container.find("heaterNotifier").heaterOff.bind(container.find("heaterNotifier")));
+container.createAndRegister("heaterNotifier", require(path.resolve(__dirname, "./lib/HeaterNotifier")));
+container.createAndRegister("heaterController", require(path.resolve(__dirname, "./lib/HeaterController")));
+container.createAndRegister("temperatureWatcher", require(path.resolve(__dirname, "./lib/TemperatureWatcher")));
 
 // create a REST api
 container.createAndRegister("columbo", Columbo, {
-	resourceDirectory: config.get("rest:resources"),
+	resourceDirectory: path.resolve(__dirname, config.get("rest:resources")),
 	resourceCreator: function(resource, name) {
 		return container.createAndRegister(name + "Resource", resource);
 	}
@@ -60,15 +50,6 @@ bonvoyageClient.register({
 
 		LOG.info("RESTServer", "Running at", "http://localhost:" + port);
 	}
-});
-bonvoyageClient.find(function(error, seaport) {
-	if(error) {
-		LOG.error("Error finding seaport", error);
-
-		return;
-	}
-
-	LOG.info("Found seaport server");
 });
 bonvoyageClient.on("seaportUp", function(seaport) {
 	container.register("seaport", seaport);
