@@ -21,7 +21,7 @@
 		"version": "1.0.0"
 	},
 	"arduino": {
-		"port": "/dev/cu.usbserial-A6027PCJ",
+		"port": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A6027PCJ-if00-port0",
 		"pin": 2
 	},
 	"notificationInterval": 600000,
