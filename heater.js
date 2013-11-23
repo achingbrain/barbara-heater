@@ -1,5 +1,4 @@
-var five = require("johnny-five"),
-	LOG = require("winston"),
+var LOG = require("winston"),
 	config = require("nconf"),
 	Container = require("wantsit").Container,
 	bonvoyage = require("bonvoyage"),
