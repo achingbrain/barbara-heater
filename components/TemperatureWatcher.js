@@ -1,6 +1,4 @@
 var Autowire = require("wantsit").Autowire,
-	restify = require("restify"),
-	LOG = require("winston"),
 	EventEmitter = require("events").EventEmitter,
 	util = require("util");
 
@@ -8,12 +6,14 @@ var TemperatureWatcher = function() {
 	EventEmitter.call(this);
 
 	this._config = Autowire;
+	this._logger = Autowire;
 	this._seaport = Autowire;
+	this._restify = Autowire;
 };
 util.inherits(TemperatureWatcher, EventEmitter);
 
 TemperatureWatcher.prototype.afterPropertiesSet = function() {
-	LOG.info("TemperatureWatcher", "Will check temperature every", this._config.get("notificationInterval")/1000, "seconds");
+	this._logger.info("TemperatureWatcher", "Will check temperature every", this._config.get("notificationInterval")/1000, "seconds");
 
 	setInterval(this.checkTemperature.bind(this), this._config.get("notificationInterval"));
 };
@@ -26,9 +26,9 @@ TemperatureWatcher.prototype.checkTemperature = function() {
 	services.forEach(function(service) {
 		var url = "http://" + service.host + ":" + service.port;
 
-		LOG.info("TemperatureWatcher", "Asking", url, "for it's configuration");
+		this._logger.info("TemperatureWatcher", "Asking", url, "for it's configuration");
 
-		var client = restify.createJsonClient({
+		var client = this._restify.createJsonClient({
 			url: url
 		});
 
@@ -39,7 +39,7 @@ TemperatureWatcher.prototype.checkTemperature = function() {
 TemperatureWatcher.prototype.queryTemperatureSensorConfiguration = function(client, url) {
 	client.get("/config", function(error, request, response, object) {
 		if(error) {
-			LOG.error("TemperatureWatcher", "Could not get config from", url + "/config", error);
+			this._logger.error("TemperatureWatcher", "Could not get config from", url + "/config", error);
 
 			return;
 		}
@@ -48,7 +48,7 @@ TemperatureWatcher.prototype.queryTemperatureSensorConfiguration = function(clie
 			return;
 		}
 
-		LOG.info("TemperatureWatcher", url, "is our temperature sensor");
+		this._logger.info("TemperatureWatcher", url, "is our temperature sensor");
 		this.queryTemperatureSensor(client, url);
 	}.bind(this));
 };
@@ -57,26 +57,26 @@ TemperatureWatcher.prototype.queryTemperatureSensor = function(client, url) {
 	// we're found the temperature sensor we're after
 	client.get("/temperature", function(error, request, response, object) {
 		if(error) {
-			LOG.error("TemperatureWatcher", "Could not get temperature from", url + "/temperature", error);
+			this._logger.error("TemperatureWatcher", "Could not get temperature from", url + "/temperature", error);
 
 			return;
 		}
 
 		if(!object.celsius || isNaN(object.celsius)) {
-			LOG.info("TemperatureWatcher", "Looks like the temperature sensor wasn't ready yet");
+			this._logger.info("TemperatureWatcher", "Looks like the temperature sensor wasn't ready yet");
 
 			return;
 		}
 
-		LOG.info("TemperatureWatcher", "Read", object.celsius, "°C");
+		this._logger.info("TemperatureWatcher", "Read", object.celsius, "°C");
 
 		// what's the temperature, eh?
 		if(object.celsius > this._config.get("maxTemperature")) {
-			LOG.warn("TemperatureWatcher", "Too hot!");
-			this.emit("onTooHot", object.celsius);
+			this._logger.warn("TemperatureWatcher", "Too hot!");
+			this.emit("tooHot", object.celsius);
 		} else if(object.celsius < this._config.get("minTemperature")) {
-			LOG.warn("TemperatureWatcher", "Too cold!");
-			this.emit("onTooCold", object.celsius);
+			this._logger.warn("TemperatureWatcher", "Too cold!");
+			this.emit("tooCold", object.celsius);
 		}
 	}.bind(this));
 };

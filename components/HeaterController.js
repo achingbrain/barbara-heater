@@ -20,8 +20,8 @@ util.inherits(HeaterController, EventEmitter);
 
 HeaterController.prototype.containerAware = function(container) {
 	// set up events for relay controller to turn the heater on and off
-	container.find("temperatureWatcher").on("onTooHot", this.tooHot.bind(this));
-	container.find("temperatureWatcher").on("onTooCold", this.tooCold.bind(this));
+	container.find("temperatureWatcher").on("tooHot", this.tooHot.bind(this));
+	container.find("temperatureWatcher").on("tooCold", this.tooCold.bind(this));
 };
 
 HeaterController.prototype.afterPropertiesSet = function() {
