@@ -24,6 +24,10 @@
 		"port": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A6027PCJ-if00-port0",
 		"pin": 2
 	},
+	"logging": {
+		"timestamp": true,
+		"colorize": false
+	},
 	"notificationInterval": 600000,
 	"minTemperature": 20,
 	"maxTemperature": 22

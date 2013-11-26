@@ -2,10 +2,10 @@ var LOG = require("winston"),
 	config = require("nconf"),
 	Container = require("wantsit").Container,
 	bonvoyage = require("bonvoyage"),
-	restify = require("restify"),
 	Columbo = require("columbo"),
 	Hapi = require("hapi"),
-	path = require("path");
+	path = require("path"),
+	SerialPort = require("serialport").SerialPort;
 
 // set up arguments
 config.argv().env().file(path.resolve(__dirname, "config.json"));
@@ -13,10 +13,22 @@ config.argv().env().file(path.resolve(__dirname, "config.json"));
 var container = new Container();
 container.register("config", config);
 
+// set up logging
+container.createAndRegister("logger", winston.Logger, {
+	transports: [
+		new (winston.transports.Console)(config.get("logging"))
+	]
+});
+
 // our components
-container.createAndRegister("heaterNotifier", require(path.resolve(__dirname, "./lib/HeaterNotifier")));
-container.createAndRegister("heaterController", require(path.resolve(__dirname, "./lib/HeaterController")));
-container.createAndRegister("temperatureWatcher", require(path.resolve(__dirname, "./lib/TemperatureWatcher")));
+container.createAndRegister("heaterNotifier", require(path.resolve(__dirname, "./components/HeaterNotifier")));
+container.createAndRegister("heaterController", require(path.resolve(__dirname, "./components/HeaterController")));
+container.createAndRegister("temperatureWatcher", require(path.resolve(__dirname, "./components/TemperatureWatcher")));
+container.createAndRegister("relay", SerialPort, this._config.get("arduino:port"), {
+	baudrate: 9600
+});
+
+container.register("restify", require("restify"));
 
 // create a REST api
 container.createAndRegister("columbo", Columbo, {
