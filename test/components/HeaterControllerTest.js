@@ -1,115 +1,60 @@
-var HeaterController = require(__dirname + "/../../components/HeaterController"),
-	sinon = require("sinon"),
-	should = require("should");
+var HeaterController = require('../../lib/components/HeaterController'),
+  sinon = require('sinon'),
+  expect = require('chai').expect
 
-module.exports["HeaterController"] = {
-	setUp: function(done) {
-		this.controller = new HeaterController();
-		this.controller._logger = {
-			info: sinon.stub(),
-			warn: sinon.stub(),
-			error: sinon.stub(),
-			debug: sinon.stub()
-		};
-		this.controller._config = {
-			get: sinon.stub()
-		};
-		this.controller._relay = {
-			on: sinon.stub(),
-			write: sinon.stub()
-		};
+describe('HeaterController', function() {
+  var controller
 
-		done();
-	},
+  beforeEach(function() {
+    controller = new HeaterController();
+    controller._logger = {
+      info: sinon.stub(),
+      warn: sinon.stub(),
+      error: sinon.stub(),
+      debug: sinon.stub()
+    }
+    controller._child_process = {
+      execFile: sinon.stub()
+    }
+  })
+  
+  it('should turn heater on', function(done) {
+    controller.state = false
+    controller._pin = 5
 
-	"Should turn heater on": function( test ) {
-		this.controller._relay.fd = true;
+    controller._child_process.execFile.withArgs('echo', ['1', '>', '/sys/class/gpio/gpio5/value']).callsArg(2)
 
-		this.controller.tooCold();
+    controller.on('heaterOn', done)
 
-		this.controller._relay.write.calledWith([0x05]);
+    controller.turnHeaterOn()
+  })
 
-		test.done();
-	},
+  it('should not turn heater on twice', function() {
+    controller.state = true
+    controller._pin = 5
 
-	"Should not turn heater on twice": function( test ) {
-		this.controller._relay.fd = true;
+    controller.turnHeaterOn()
 
-		// set up event listeners
-		this.controller.afterPropertiesSet();
+    expect(controller._child_process.execFile.called).to.be.false
+  })
 
-		// call on open callback
-		this.controller._relay.on.getCall(0).args[0].should.equal("open");
-		this.controller._relay.on.getCall(0).args[1]();
+  it('should turn heater off', function(done) {
+    controller.state = true
+    controller._pin = 5
 
-		this.controller._relay.on.getCall(1).args[0].should.equal("data");
-		var onDataCallback = this.controller._relay.on.getCall(1).args[1];
+    controller._child_process.execFile.withArgs('echo', ['0', '>', '/sys/class/gpio/gpio5/value']).callsArgWith(2)
 
-		this.controller.tooCold();
+    controller.on('heaterOff', done)
 
-		// notify that we've closed the relay
-		onDataCallback(new Buffer([0x06]));
+    controller.turnHeaterOff()
+  })
 
-		// call it again
-		this.controller.tooCold();
+  it('should not turn heater off twice', function() {
+    controller.state = false
+    controller._pin = 5
 
-		// should only have turned it on once
-		sinon.assert.calledOnce(this.controller._relay.write);
+    controller.turnHeaterOff()
 
-		test.done();
-	},
-
-	"Should turn heater off": function( test ) {
-		this.controller._relay.fd = true;
-
-		this.controller._relayState = true;
-
-		this.controller.tooHot();
-
-		this.controller._relay.write.calledWith([0x07]);
-
-		test.done();
-	},
-
-	"Should not turn heater off twice": function( test ) {
-		this.controller._relay.fd = true;
-
-		// set up event listeners
-		this.controller.afterPropertiesSet();
-
-		// call on open callback
-		this.controller._relay.on.getCall(0).args[0].should.equal("open");
-		this.controller._relay.on.getCall(0).args[1]();
-
-		this.controller._relay.on.getCall(1).args[0].should.equal("data");
-		var onDataCallback = this.controller._relay.on.getCall(1).args[1];
-
-		this.controller._relayState = true;
-
-		this.controller.tooHot();
-
-		// notify that we've opened the relay
-		onDataCallback(new Buffer([0x08]));
-
-		// call it again
-		this.controller.tooHot();
-
-		// should only have turned it on once
-		sinon.assert.calledOnce(this.controller._relay.write);
-
-		test.done();
-	},
-
-	"Should not write to non-open serial port": function( test ) {
-		this.controller.tooHot();
-
-		this.controller._relayState = true;
-
-		this.controller.tooCold();
-
-		// should not have written to the serial port
-		this.controller._relay.write.neverCalledWith();
-
-		test.done();
-	}
-};
+    expect(controller._child_process.execFile.called).to.be.false
+  })
+})

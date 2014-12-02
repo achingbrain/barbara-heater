@@ -1,120 +1,49 @@
-var HeaterNotifier = require(__dirname + "/../../components/HeaterNotifier"),
-	sinon = require("sinon"),
-	should = require("should");
+var HeaterNotifier = require('../../lib/components/HeaterNotifier'),
+  sinon = require('sinon'),
+  expect = require('chai').expect
 
-module.exports["HeaterNotifier"] = {
-	setUp: function(done) {
-		this.notifier = new HeaterNotifier();
-		this.notifier._logger = {
-			info: sinon.stub(),
-			warn: sinon.stub(),
-			error: sinon.stub(),
-			debug: sinon.stub()
-		};
-		this.notifier._config = {
-			get: sinon.stub()
-		};
-		this.notifier._seaport = {
-			query: sinon.stub()
-		};
-		this.notifier._restify = {
-			createJsonClient: sinon.stub()
-		};
+describe('HeaterNotifier', function() {
+  var notifier
 
-		done();
-	},
+  beforeEach(function() {
+    notifier = new HeaterNotifier();
+    notifier._logger = {
+      info: sinon.stub(),
+      warn: sinon.stub(),
+      error: sinon.stub(),
+      debug: sinon.stub()
+    }
+    notifier._notifierClient = {
+      post: sinon.stub()
+    }
+  })
 
-	"Should notify of heater on event": function( test ) {
-		var service = {
-			host: "foo",
-			port: 10
-		};
-		var brewId = "foo";
-		var stattoName = "statto";
-		var stattoVersion = "1.0.0";
-		var restClient = {
-			post: sinon.stub().callsArg(2)
-		}
+  it('should notify of heater on event', function() {
+    notifier._path = 'path'
 
-		this.notifier._config.get.withArgs("statto:name").returns(stattoName);
-		this.notifier._config.get.withArgs("statto:version").returns(stattoVersion);
-		this.notifier._config.get.withArgs("brew:id").returns(brewId);
-		this.notifier._seaport.query.withArgs(stattoName + "@" + stattoVersion).returns([service]);
-		this.notifier._restify.createJsonClient.withArgs({
-			url: "http://" + service.host + ":" + service.port
-		}).returns(restClient);
+    notifier._notify('on')
 
-		this.notifier._notify("on");
+    expect(notifier._notifierClient.post.calledWith(notifier._path, {
+      event: 'on'
+    }, sinon.match.func)).to.be.true
+  })
 
-		// restify should have been called
-		restClient.post.getCall(0).calledWith("/brews/" + brewId + "/heaterEvents", sinon.match.obj, sinon.match.func);
-		restClient.post.getCall(0).args[1].event.should.equal("on");
+  it('should notify of heater on event', function() {
+    notifier._path = 'path'
 
-		test.done();
-	},
+    notifier._notify('off')
 
-	"Should notify of heater off event": function( test ) {
-		var service = {
-			host: "foo",
-			port: 10
-		};
-		var brewId = "foo";
-		var stattoName = "statto";
-		var stattoVersion = "1.0.0";
-		var restClient = {
-			post: sinon.stub().callsArg(2)
-		}
+    expect(notifier._notifierClient.post.calledWith(notifier._path, {
+      event: 'off'
+    }, sinon.match.func)).to.be.true
+  })
 
-		this.notifier._config.get.withArgs("statto:name").returns(stattoName);
-		this.notifier._config.get.withArgs("statto:version").returns(stattoVersion);
-		this.notifier._config.get.withArgs("brew:id").returns(brewId);
-		this.notifier._seaport.query.withArgs(stattoName + "@" + stattoVersion).returns([service]);
-		this.notifier._restify.createJsonClient.withArgs({
-			url: "http://" + service.host + ":" + service.port
-		}).returns(restClient);
+  it('should not notify of duplicate heater event', function() {
+    notifier._path = 'path'
 
-		this.notifier._notify("off");
+    notifier._notify('off')
+    notifier._notify('off')
 
-		// restify should have been called
-		restClient.post.getCall(0).calledWith("/brews/" + brewId + "/heaterEvents", sinon.match.obj, sinon.match.func);
-		restClient.post.getCall(0).args[1].event.should.equal("off");
-
-		test.done();
-	},
-
-	"Should only notify of heater event once": function( test ) {
-		var service = {
-			host: "foo",
-			port: 10
-		};
-		var brewId = "foo";
-		var stattoName = "statto";
-		var stattoVersion = "1.0.0";
-		var restClient = {
-			post: sinon.stub().callsArg(2)
-		}
-
-		this.notifier._config.get.withArgs("statto:name").returns(stattoName);
-		this.notifier._config.get.withArgs("statto:version").returns(stattoVersion);
-		this.notifier._config.get.withArgs("brew:id").returns(brewId);
-		this.notifier._seaport.query.withArgs(stattoName + "@" + stattoVersion).returns([service]);
-		this.notifier._restify.createJsonClient.withArgs({
-			url: "http://" + service.host + ":" + service.port
-		}).returns(restClient);
-
-		this.notifier._notify("off");
-
-		// restify should have been called
-		restClient.post.getCall(0).calledWith("/brews/" + brewId + "/heaterEvents", sinon.match.obj, sinon.match.func);
-		restClient.post.getCall(0).args[1].event.should.equal("off");
-
-		// call it again
-		this.notifier._notify("off");
-
-		// should only have been called once
-		sinon.assert.calledOnce(this.notifier._restify.createJsonClient);
-		sinon.assert.calledOnce(restClient.post);
-
-		test.done();
-	}
-};
+    expect(notifier._notifierClient.post.callCount).to.equal(1)
+  })
+})

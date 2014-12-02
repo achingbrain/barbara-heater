@@ -1,116 +1,41 @@
-var TemperatureWatcher = require(__dirname + "/../../components/TemperatureWatcher"),
-	sinon = require("sinon"),
-	should = require("should");
+var TemperatureWatcher = require('../../lib/components/TemperatureWatcher'),
+  sinon = require('sinon'),
+  expect = require('chai').expect
 
-module.exports["TemperatureWatcher"] = {
-	setUp: function(done) {
-		this.watcher = new TemperatureWatcher();
-		this.watcher._logger = {
-			info: sinon.stub(),
-			warn: sinon.stub(),
-			error: sinon.stub(),
-			debug: sinon.stub()
-		};
-		this.watcher._config = {
-			get: sinon.stub()
-		};
-		this.watcher._seaport = {
-			query: sinon.stub()
-		};
-		this.watcher._restify = {
-			createJsonClient: sinon.stub()
-		};
+describe('TemperatureWatcher', function() {
+  var watcher
 
-		done();
-	},
+  beforeEach(function() {
+    watcher = new TemperatureWatcher()
+    watcher._logger = {
+      info: sinon.stub(),
+      warn: sinon.stub(),
+      error: sinon.stub(),
+      debug: sinon.stub()
+    }
+    watcher._temperatureWatcherClient = {
+      get: sinon.stub()
+    }
+  })
 
-	"Should emit tooHot event when temperature is too hot": function( test ) {
-		var temperature = 50;
-		var maxTemperature = 10;
-		var minTemperature = 10;
-		var service = {
-			host: "foo",
-			port: 10
-		};
-		var brewId = "foo";
-		var temperatureName = "temperature";
-		var temperatureVersion = "1.0.0";
-		var configResponseObject = {
-			brew: {
-				id: brewId
-			}
-		};
-		var temperatureResponseObject = {
-			celsius: temperature
-		};
-		var restClient = {
-			get: sinon.stub(),
-			post: sinon.stub().callsArg(2)
-		}
-		restClient.get.withArgs("/config", sinon.match.func).callsArgWith(1, null, null, null, configResponseObject);
-		restClient.get.withArgs("/temperature", sinon.match.func).callsArgWith(1, null, null, null, temperatureResponseObject);
+  it('should emit tooHot event when temperature is too hot', function(done) {
+    process.env.BARBARA_MAX_TEMPERATURE = 1
 
-		this.watcher._config.get.withArgs("temperature:name").returns(temperatureName);
-		this.watcher._config.get.withArgs("temperature:version").returns(temperatureVersion);
-		this.watcher._config.get.withArgs("brew:id").returns(brewId);
-		this.watcher._config.get.withArgs("maxTemperature").returns(maxTemperature);
-		this.watcher._config.get.withArgs("minTemperature").returns(minTemperature);
+    watcher.on('tooHot', done)
 
-		this.watcher._seaport.query.withArgs(temperatureName + "@" + temperatureVersion).returns([service]);
-		this.watcher._restify.createJsonClient.withArgs({
-			url: "http://" + service.host + ":" + service.port
-		}).returns(restClient);
+    watcher._temperatureWatcherClient.get.withArgs('/temperature', sinon.match.func).callsArgWith(1, undefined, {}, {}, 5)
 
-		this.watcher.on("tooHot", function() {
-			test.done();
-		});
+    watcher.checkTemperature()
+  })
 
-		// should trigger tooHot event
-		this.watcher.checkTemperature();
-	},
+  it('should emit tooCold event when temperature is too cold', function(done) {
+    process.env.BARBARA_MAX_TEMPERATURE = 50
+    process.env.BARBARA_MIN_TEMPERATURE = 10
 
-	"Should emit tooCold event when temperature is too cold": function( test ) {
-		var temperature = 2;
-		var maxTemperature = 10;
-		var minTemperature = 10;
-		var service = {
-			host: "foo",
-			port: 10
-		};
-		var brewId = "foo";
-		var temperatureName = "temperature";
-		var temperatureVersion = "1.0.0";
-		var configResponseObject = {
-			brew: {
-				id: brewId
-			}
-		};
-		var temperatureResponseObject = {
-			celsius: temperature
-		};
-		var restClient = {
-			get: sinon.stub(),
-			post: sinon.stub().callsArg(2)
-		}
-		restClient.get.withArgs("/config", sinon.match.func).callsArgWith(1, null, null, null, configResponseObject);
-		restClient.get.withArgs("/temperature", sinon.match.func).callsArgWith(1, null, null, null, temperatureResponseObject);
+    watcher.on('tooCold', done)
 
-		this.watcher._config.get.withArgs("temperature:name").returns(temperatureName);
-		this.watcher._config.get.withArgs("temperature:version").returns(temperatureVersion);
-		this.watcher._config.get.withArgs("brew:id").returns(brewId);
-		this.watcher._config.get.withArgs("maxTemperature").returns(maxTemperature);
-		this.watcher._config.get.withArgs("minTemperature").returns(minTemperature);
+    watcher._temperatureWatcherClient.get.withArgs('/temperature', sinon.match.func).callsArgWith(1, undefined, {}, {}, 5)
 
-		this.watcher._seaport.query.withArgs(temperatureName + "@" + temperatureVersion).returns([service]);
-		this.watcher._restify.createJsonClient.withArgs({
-			url: "http://" + service.host + ":" + service.port
-		}).returns(restClient);
-
-		this.watcher.on("tooCold", function() {
-			test.done();
-		});
-
-		// should trigger tooHot event
-		this.watcher.checkTemperature();
-	}
-};
+    watcher.checkTemperature()
+  })
+})
