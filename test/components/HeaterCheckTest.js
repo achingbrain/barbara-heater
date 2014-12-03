@@ -26,7 +26,6 @@ describe('HeaterCheck', function() {
 
     check._fs.exists.withArgs('/sys/class/gpio/gpio5').callsArgWith(1, true)
 
-
     check._checkPin(function(error, exists) {
       expect(error).to.not.exist
 
