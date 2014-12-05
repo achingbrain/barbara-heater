@@ -46,7 +46,7 @@ check.on('ready', function() {
 
   // create a REST api
   var columbo = container.createAndRegister('columbo', Columbo, {
-    resourceDirectory:'./lib/resources',
+    resourceDirectory: path.resolve(__dirname, './lib/resources'),
     resourceCreator: function(resource, name) {
       return container.createAndRegister(name + 'Resource', resource)
     },
