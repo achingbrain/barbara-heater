@@ -3,7 +3,8 @@ var LOG = require('winston'),
   Columbo = require('columbo'),
   Hapi = require('hapi'),
   path = require('path'),
-  restify = require('restify')
+  restify = require('restify'),
+  winston = require('winston')
 
 if(!process.env.BARBARA_BREW) {
   throw new Error('Please specify process.env.BARBARA_BREW')
