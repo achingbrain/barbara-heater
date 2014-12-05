@@ -15,6 +15,7 @@ process.env.BARBARA_DATABASE = process.env.BARBARA_DATABASE || 'http://silenus.l
 process.env.BARBARA_NOTIFICATION_INTERVAL = process.env.BARBARA_NOTIFICATION_INTERVAL || 10000
 process.env.BARBARA_MAX_TEMPERATURE = parseInt(process.env.BARBARA_MAX_TEMPERATURE || 30, 10)
 process.env.BARBARA_MIN_TEMPERATURE = parseInt(process.env.BARBARA_MIN_TEMPERATURE || 20, 10)
+process.env.BARBARA_GPIO_PIN = parseInt(process.env.BARBARA_GPIO_PIN || 30)
 
 var container = new Container()
 
