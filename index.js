@@ -28,6 +28,7 @@ container.createAndRegister('logger', winston.Logger, {
   ]
 })
 
+container.register('child_process', require('child_process'))
 container.register('fs', require('fs'))
 
 var check = container.createAndRegister('heaterCheck', require('./lib/components/HeaterCheck'))
@@ -55,7 +56,7 @@ check.on('ready', function() {
   var server = Hapi.createServer('0.0.0.0', process.env.BARBARA_PORT, {
     cors: true
   })
-  server.addRoutes(columbo.discover())
+  server.route(columbo.discover())
   server.start(function() {
     container.find('logger').info('RESTServer', 'Running at', 'http://localhost:' + process.env.BARBARA_PORT)
   })
